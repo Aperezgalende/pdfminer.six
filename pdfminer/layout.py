@@ -82,6 +82,7 @@ class LAParams:
         line_overlap: float = 0.5,
         char_margin: float = 2.0,
         line_margin: float = 0.5,
+        absolute_line_margin: float = 1.0,
         word_margin: float = 0.1,
         boxes_flow: Optional[float] = 0.5,
         detect_vertical: bool = False,
@@ -90,6 +91,7 @@ class LAParams:
         self.line_overlap = line_overlap
         self.char_margin = char_margin
         self.line_margin = line_margin
+        self.absolute_line_margin = absolute_line_margin
         self.word_margin = word_margin
         self.boxes_flow = boxes_flow
         self.detect_vertical = detect_vertical
@@ -118,7 +120,7 @@ class LAParams:
 
 
 class LTItem:
-    """Interface for things that can be analyzed"""
+    """Interfapath = 'C:/Users/APEREZG-LOCAL/Documents/candidatos/CV/Timoteo_Miller.pdf'ce for things that can be analyzed"""
 
     def analyze(self, laparams: LAParams) -> None:
         """Perform the layout analysis."""
@@ -520,7 +522,7 @@ class LTTextLine(LTTextContainer[TextLineElement]):
         return
 
     def find_neighbors(
-        self, plane: Plane[LTComponentT], ratio: float
+        self, plane: Plane[LTComponentT], ratio: float, absolute_ratio: float
     ) -> List["LTTextLine"]:
         raise NotImplementedError
 
@@ -546,7 +548,7 @@ class LTTextLineHorizontal(LTTextLine):
         return
 
     def find_neighbors(
-        self, plane: Plane[LTComponentT], ratio: float
+        self, plane: Plane[LTComponentT], ratio: float, absolute_ratio: float
     ) -> List[LTTextLine]:
         """
         Finds neighboring LTTextLineHorizontals in the plane.
@@ -556,18 +558,20 @@ class LTTextLineHorizontal(LTTextLine):
         will be the same height as self, and also either left-, right-, or
         centrally-aligned.
         """
-        d = ratio * self.height
-        objs = plane.find((self.x0, self.y0 - d, self.x1, self.y1 + d))
+        d_ratio = ratio * self.height
+        d_final = min(d_ratio, absolute_ratio)
+        d_comparison = max(d_ratio, absolute_ratio)
+        objs = plane.find((self.x0, self.y0 - d_final, self.x1, self.y1 + d_final))
         return [
             obj
             for obj in objs
             if (
                 isinstance(obj, LTTextLineHorizontal)
-                and self._is_same_height_as(obj, tolerance=d)
+                and self._is_same_height_as(obj, tolerance=d_comparison)
                 and (
-                    self._is_left_aligned_with(obj, tolerance=d)
-                    or self._is_right_aligned_with(obj, tolerance=d)
-                    or self._is_centrally_aligned_with(obj, tolerance=d)
+                    self._is_left_aligned_with(obj, tolerance=d_comparison)
+                    or self._is_right_aligned_with(obj, tolerance=d_comparison)
+                    or self._is_centrally_aligned_with(obj, tolerance=d_comparison)
                 )
             )
         ]
@@ -614,7 +618,7 @@ class LTTextLineVertical(LTTextLine):
         return
 
     def find_neighbors(
-        self, plane: Plane[LTComponentT], ratio: float
+        self, plane: Plane[LTComponentT], ratio: float, absolute_ratio: float
     ) -> List[LTTextLine]:
         """
         Finds neighboring LTTextLineVerticals in the plane.
@@ -759,7 +763,7 @@ class LTLayoutContainer(LTContainer[LTComponent]):
         line = None
         for obj1 in objs:
             if obj0 is not None:
-                # halign: obj0 and obj1 is horizontally aligned.
+                # halign: obj0 and obj1 are horizontally aligned.
                 #
                 #   +------+ - - -
                 #   | obj0 | - - +------+   -
@@ -840,7 +844,7 @@ class LTLayoutContainer(LTContainer[LTComponent]):
         plane.extend(lines)
         boxes: Dict[LTTextLine, LTTextBox] = {}
         for line in lines:
-            neighbors = line.find_neighbors(plane, laparams.line_margin)
+            neighbors = line.find_neighbors(plane, laparams.line_margin, laparams.absolute_line_margin)
             members = [line]
             for obj1 in neighbors:
                 members.append(obj1)
