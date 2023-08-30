@@ -62,7 +62,7 @@ class TestFindNeigbors(unittest.TestCase):
         wrong_height.set_bbox((10, 6, 15, 10))
         plane.add(wrong_height)
 
-        neighbors = line.find_neighbors(plane, laparams.line_margin)
+        neighbors = line.find_neighbors(plane, laparams.line_margin, laparams.absolute_line_margin)
         self.assertCountEqual(
             neighbors,
             [

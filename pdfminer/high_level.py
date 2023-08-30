@@ -154,7 +154,7 @@ def extract_text(
     :param codec: Text decoding codec
     :param laparams: An LAParams object from pdfminer.layout. If None, uses
         some default settings that often work well.
-    :return: a string containing all of the text extracted.
+    :return: a string containing all the text extracted.
     """
     if laparams is None:
         laparams = LAParams()
